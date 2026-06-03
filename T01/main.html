@@ -3,13 +3,12 @@
 
 <head>
 
-
-
 <!-- ctrl + K + C -->
     <script type="text/javascript">
         let gl;
         let startTime;
-        let mx = 0, my = 0;
+        let dmx = 0, dmy = 0;
+        let zoom = 1;
         let isClicked = false;
 
         function initGL(canvas) {
@@ -100,8 +99,10 @@
             o_color = vec4(0, cos(u_time) * cos(u_time), 1, 1);
 
             float n = 0.4;
-            vec2 Z1 = (gl_FragCoord.xy * vec2(fract_w, fract_h) - vec2(mx, -my)) * 4.0 / vec2(frame_w, frame_h) - vec2(2.0, 2.0);
+            vec2 Z1 = (gl_FragCoord.xy - vec2(mx, my)) * vec2(fract_w, fract_h) * 4.0 / vec2(frame_w, frame_h) - vec2(2.0, 2.0);
+            vec2 C = vec2(0.2 + 0.5 * sin(u_time / 10.0), 0.39 + sin(u_time / 10.0 + 3.0));
             n = float(Mandl(Z1));
+            n = float(Jul(Z1, C));
 
             o_color = vec4(n / 200.0, 0.6, 1, 1);
         }`;
@@ -188,8 +189,8 @@
             gl.uniform1f(u_time_location, timeFromStart / 1000.0);
             gl.uniform1f(FrameW_location, 2000);
             gl.uniform1f(FrameH_location, 1000);
-            gl.uniform1f(Mx_location, mx);
-            gl.uniform1f(My_location, my);
+            gl.uniform1f(Mx_location, dmx);
+            gl.uniform1f(My_location, dmy);
             gl.uniform1f(IsClick_location, isClicked);
             gl.uniform1f(FractW_location, 1);
             gl.uniform1f(FractH_location, 0.5);
@@ -201,6 +202,7 @@
         window.addEventListener("mousedown", (e) =>
         {
           console.log("Click!");
+          console.log(`Zone: (${e.x}, ${e.y})`);
           isClicked = !isClicked;  
         })
         window.addEventListener("mouseup", (e) =>
@@ -212,10 +214,9 @@
         window.addEventListener("mousemove", (e) =>
         {
             if (isClicked) {
-                mx = e.x;
-                my = e.y;
+                dmx += e.movementX; 
+                dmy -= e.movementY;      
             }
-            
         })
 
         function onStart() {
