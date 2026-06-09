@@ -1,15 +1,6 @@
-/*
-module.exports = {
-    input: "src/main.js",
-    output: {
-        file: "dist/main.js",
-        format: "iife"
-    }
-};
-*/
-const resolve=require("@rollup/plugin-node-resolve")
-const commonjs=require("@rollup/plugin-commonjs")
-const terser=require("@rollup/plugin-terser")
+const resolve = require("@rollup/plugin-node-resolve")
+const commonjs = require("@rollup/plugin-commonjs")
+const terser = require("@rollup/plugin-terser")
 
 module.exports = {
     input: "src/main.js",
@@ -18,13 +9,13 @@ module.exports = {
         format: "iife",
         sourcemap: "inline"
     },
-    plugins:[
+    plugins: [
         resolve({
             jsnext: true,
             main: true,
             browser: true
         }),
         commonjs(),
-        // terser()
+        terser()
     ]
 };
