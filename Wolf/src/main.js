@@ -1,4 +1,5 @@
 import { add } from './math.js'
+import { GameInit } from './game.js'
 import { Pane } from 'tweakpane'
 
 window.addEventListener("load", () => {
@@ -24,11 +25,15 @@ window.addEventListener("load", () => {
     }, 1000)
 })
 
+let canvas;
 let gl;
+let program;
+let game;
 let startTime;
 let dmx = 0, dmy = 0;
 let zoom = 1;
 let isClicked = false;
+let keys = {};
 
 function initGL(canvas) {
     gl = canvas.getContext("webgl2");
@@ -63,8 +68,6 @@ let FrameH_location;
 let Mx_location;
 let My_location;
 let IsClick_location;
-let FractW_location;
-let FractH_location;
 
 function initShaders() {
 
@@ -76,7 +79,7 @@ function initShaders() {
         return;
     }
 
-    const program = gl.createProgram();
+    program = gl.createProgram();
     gl.attachShader(program, vs);
     gl.attachShader(program, fs);
     gl.linkProgram(program);
@@ -87,14 +90,14 @@ function initShaders() {
 
     gl.useProgram(program);
 
+    game = GameInit(gl, program);
+
     u_time_location = gl.getUniformLocation(program, "u_time");
     FrameW_location = gl.getUniformLocation(program, "frame_w");
     FrameH_location = gl.getUniformLocation(program, "frame_h");
     Mx_location = gl.getUniformLocation(program, "mx");
     My_location = gl.getUniformLocation(program, "my");
     IsClick_location = gl.getUniformLocation(program, "is_click");
-    FractW_location = gl.getUniformLocation(program, "fract_w");
-    FractH_location = gl.getUniformLocation(program, "fract_h");
 }
 
 let vertexBuffer;
@@ -118,6 +121,11 @@ function drawScene() {
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
+    if (game) {
+        game.update(keys);
+        game.render();
+    }
+
     let timeFromStart = new Date().getTime() - startTime;
     gl.uniform1f(u_time_location, timeFromStart / 1000.0);
     gl.uniform1f(FrameW_location, 2000);
@@ -125,8 +133,6 @@ function drawScene() {
     gl.uniform1f(Mx_location, dmx);
     gl.uniform1f(My_location, dmy);
     gl.uniform1f(IsClick_location, isClicked);
-    gl.uniform1f(FractW_location, 1);
-    gl.uniform1f(FractH_location, 0.5);
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     window.requestAnimationFrame(drawScene);
@@ -149,8 +155,16 @@ window.addEventListener("mousemove", (e) => {
     }
 })
 
+window.addEventListener("keydown", (e) => {
+    keys[e.code] = true;
+})
+window.addEventListener("keyup", (e) => {
+    keys[e.code] = false;
+})
+
+
 function onStart() {
-    let canvas = document.getElementById("webgl-canvas");
+    canvas = document.getElementById("webgl-canvas");
 
     canvas.onmousemove = (ev) => {
         console.log(`(${ev.x}, ${ev.y})`);
@@ -172,5 +186,3 @@ function onStart() {
         .then(() => drawScene());
 
 }
-
-window.onload = onStart;
