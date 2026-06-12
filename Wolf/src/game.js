@@ -1,3 +1,5 @@
+import { MapInit } from './map.js'
+
 class Game {
     constructor(gl, program) {
         this.gl = gl;
@@ -7,10 +9,30 @@ class Game {
         this.PlayerY = 0.0;
         this.PlayerAngle = 0.0;
         this.PlayerSpeed = 0.02;
-        this.PlayerRotSpeed = 0.07;
+        this.PlayerRotSpeed = 0.002;
 
         this.uPosition = gl.getUniformLocation(program, "u_pos");
         this.uAngle = gl.getUniformLocation(program, "u_angle");
+
+        this.uMap = gl.getUniformLocation(program, "u_map");
+        this.uMapSize = gl.getUniformLocation(program, "u_map_size");
+        this.uBlockSize = gl.getUniformLocation(program, "u_block_size");
+
+        this.map = MapInit();
+
+        this.blockSize = this.map.block_size;
+
+        this.mapWidth = this.map.text_map[0].length;
+        this.mapHeight = this.map.text_map.length;
+
+        const floatMap = [];
+        for (const line of this.map.text_map) {
+            for (const symb of line) {
+                floatMap.push(symb === 'W' ? 1.0 : 0.0);
+            }
+        }
+
+        this.floatMapData = new Float32Array(floatMap);
     }
 
     countRay() {
@@ -82,6 +104,9 @@ class Game {
         this.gl.uniform2f(this.uPosition, this.PlayerX, this.PlayerY);
         this.gl.uniform1f(this.uAngle, this.PlayerAngle);
 
+        this.gl.uniform1fv(this.uMap, this.floatMapData);
+        this.gl.uniform2f(this.uMapSize, this.mapWidth, this.mapHeight);
+        this.gl.uniform1f(this.uBlockSize, this.blockSize);
     }
 }
 

@@ -35,6 +35,9 @@ let zoom = 1;
 let isClicked = false;
 let keys = {};
 
+let frame_w = 2000;
+let frame_h = 1000;
+
 function initGL(canvas) {
     gl = canvas.getContext("webgl2");
     if (!gl) {
@@ -65,6 +68,7 @@ function getShader(shaderStr, type) {
 let u_time_location;
 let FrameW_location;
 let FrameH_location;
+let coefX_location;
 let Mx_location;
 let My_location;
 let IsClick_location;
@@ -95,6 +99,7 @@ function initShaders() {
     u_time_location = gl.getUniformLocation(program, "u_time");
     FrameW_location = gl.getUniformLocation(program, "frame_w");
     FrameH_location = gl.getUniformLocation(program, "frame_h");
+    coefX_location = gl.getUniformLocation(program, "coef_x");
     Mx_location = gl.getUniformLocation(program, "mx");
     My_location = gl.getUniformLocation(program, "my");
     IsClick_location = gl.getUniformLocation(program, "is_click");
@@ -127,9 +132,11 @@ function drawScene() {
     }
 
     let timeFromStart = new Date().getTime() - startTime;
+
     gl.uniform1f(u_time_location, timeFromStart / 1000.0);
-    gl.uniform1f(FrameW_location, 2000);
-    gl.uniform1f(FrameH_location, 1000);
+    gl.uniform1f(FrameW_location, frame_w);
+    gl.uniform1f(FrameH_location, frame_h);
+    gl.uniform1f(coefX_location, frame_w / frame_h);
     gl.uniform1f(Mx_location, dmx);
     gl.uniform1f(My_location, dmy);
     gl.uniform1f(IsClick_location, isClicked);
