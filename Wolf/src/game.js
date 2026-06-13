@@ -9,7 +9,7 @@ class Game {
         this.PlayerY = 0.0;
         this.PlayerAngle = 0.0;
         this.PlayerSpeed = 0.02;
-        this.PlayerRotSpeed = 0.002;
+        this.PlayerRotSpeed = 0.021;
 
         this.uPosition = gl.getUniformLocation(program, "u_pos");
         this.uAngle = gl.getUniformLocation(program, "u_angle");
@@ -17,13 +17,16 @@ class Game {
         this.uMap = gl.getUniformLocation(program, "u_map");
         this.uMapSize = gl.getUniformLocation(program, "u_map_size");
         this.uBlockSize = gl.getUniformLocation(program, "u_block_size");
+        this.uBlockThin = gl.getUniformLocation(program, "u_block_thin");
 
         this.map = MapInit();
 
         this.blockSize = this.map.block_size;
 
-        this.mapWidth = this.map.text_map[0].length;
-        this.mapHeight = this.map.text_map.length;
+        this.mapWidth = this.map.mapWidth;
+        this.mapHeight = this.map.mapHeight;
+
+        this.coef = this.gl.canvas.width / this.gl.canvas.height;
 
         const floatMap = [];
         for (const line of this.map.text_map) {
@@ -36,7 +39,7 @@ class Game {
     }
 
     countRay() {
-        const coef = this.gl.canvas.width / this.gl.canvas.height;
+        const coef = this.coef;
 
         this.screenMinX = -coef;
         this.screenMaxX = coef;
@@ -81,19 +84,37 @@ class Game {
         const moveX = Math.cos(this.PlayerAngle);
         const moveY = Math.sin(this.PlayerAngle)
 
+        if (keys['ArrowLeft']) this.PlayerAngle += this.PlayerRotSpeed;
+        if (keys['ArrowRight']) this.PlayerAngle -= this.PlayerRotSpeed;
+
+        const dirX = Math.cos(this.PlayerAngle);
+        const dirY = Math.sin(this.PlayerAngle);
 
         if (keys['ArrowUp']) {
-            this.PlayerX += this.PlayerSpeed * moveX;
-            this.PlayerY += this.PlayerSpeed * moveY;
+            const nextX = this.PlayerX + dirX * this.PlayerSpeed;
+            const nextY = this.PlayerY + dirY * this.PlayerSpeed;
+
+            if (this.map.canMove(nextX, this.PlayerY)) {
+                this.PlayerX = nextX;
+            }
+            if (this.map.canMove(this.PlayerX, nextY)) {
+                this.PlayerY = nextY;
+            }
         }
 
         if (keys['ArrowDown']) {
-            this.PlayerX -= this.PlayerSpeed * moveX;
-            this.PlayerY -= this.PlayerSpeed * moveY;
+            const nextX = this.PlayerX - dirX * this.PlayerSpeed;
+            const nextY = this.PlayerY - dirY * this.PlayerSpeed;
+
+            if (this.map.canMove(nextX, this.PlayerY)) {
+                this.PlayerX = nextX;
+            }
+            if (this.map.canMove(this.PlayerX, nextY)) {
+                this.PlayerY = nextY;
+            }
         }
 
-        if (keys['ArrowLeft']) this.PlayerAngle += this.PlayerRotSpeed;
-        if (keys['ArrowRight']) this.PlayerAngle -= this.PlayerRotSpeed;
+
 
         this.PlayerX = Math.max(-1.0, Math.min(1.0, this.PlayerX));
         this.PlayerY = Math.max(-1.0, Math.min(1.0, this.PlayerY));
@@ -107,6 +128,7 @@ class Game {
         this.gl.uniform1fv(this.uMap, this.floatMapData);
         this.gl.uniform2f(this.uMapSize, this.mapWidth, this.mapHeight);
         this.gl.uniform1f(this.uBlockSize, this.blockSize);
+        this.gl.uniform1f(this.uBlockThin, this.map.block_thin);
     }
 }
 

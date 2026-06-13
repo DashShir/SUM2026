@@ -13,9 +13,9 @@ uniform float u_time, frame_w, frame_h, coef_x, my, mx, is_click;
 uniform vec2 u_pos;
 uniform float u_angle;
 
-uniform float u_map[256];  
+uniform float u_map[1000];  
 uniform vec2 u_map_size;    
-uniform float u_block_size; 
+uniform float u_block_size, u_block_thin; 
 
 vec2 ray_pos;
 vec2 toPlayer;
@@ -40,7 +40,7 @@ void drawRay(vec4 backColor, vec2 uv) {
     
     float distToRay = length(toPlayer - rayDir * scalar_projection);
 
-    if (scalar_projection > 0.0 && distToRay < 0.008) {
+    if (scalar_projection > 0.0 && distToRay < 0.0008) {
         o_color = vec4(1.0, 1.0, 0.0, 1.0); 
     }
 }
@@ -61,8 +61,8 @@ float isWall(vec2 point) {
 
 float castSingleRay(vec2 origin, vec2 direction) {
     float distance = 0.0;   
-    float stepSize = 0.02;  
-    float maxDistance = 5.0; 
+    float stepSize = 0.04;  
+    float maxDistance = 2.0; 
     
     for (float t = 0.0; t < maxDistance; t += stepSize) {
         vec2 point = origin + direction * t;  
@@ -74,15 +74,14 @@ float castSingleRay(vec2 origin, vec2 direction) {
 }
 
 void drawAllRays() {
-    float angle_view = 0.4;
+    float angle_view = 0.8;
     float startAngle = u_angle - angle_view * 0.5;
     float endAngle = u_angle + angle_view * 0.5;
 
-    float verticalStripes = 180.0;          
+    float verticalStripes = 1800.0;          
     float stripeWidth = frame_w / verticalStripes;
 
     int rayIndex = int(floor(xs / stripeWidth));
-
     
     float curX = xs / frame_w;
     
@@ -91,7 +90,7 @@ void drawAllRays() {
     float angleStep = angle_view / verticalStripes;
     rayAngle = startAngle + float(rayIndex) * angleStep;
     
-    vec2 rayDirection = vec2(cos(rayAngle), sin(rayAngle));
+    vec2 rayDirection = vec2(cos(rayAngle) * coef_x, sin(rayAngle));
 
     float distance = castSingleRay(u_pos, rayDirection);
     
@@ -102,9 +101,9 @@ void drawAllRays() {
 }
 
 void drawBlocks(vec2 uv) {
-    vec2 uv_new = vec2(uv.x * coef_x, uv.y);
+    vec2 uv_new = vec2(uv.x, - uv.y);
     vec2 mapWorldSize = u_map_size * u_block_size;
-    vec2 worldPos = mapWorldSize * uv_new * 0.5;
+    vec2 worldPos = mapWorldSize * vec2(uv_new.x, uv_new.y) * 0.5;
 
     vec2 mapSpace = worldPos + mapWorldSize * 0.5;
 
@@ -119,11 +118,12 @@ void drawBlocks(vec2 uv) {
             o_color = vec4(1, 0.3, 0.3, 1.0); 
             
             vec2 inBlock = mod(mapSpace, u_block_size);
-            float thickness = 0.005;
+            float thickness = u_block_thin;
             if (inBlock.x < thickness || inBlock.x > u_block_size - thickness || 
                 inBlock.y < thickness || inBlock.y > u_block_size - thickness) {
                 o_color = vec4(0.1, 1, 0.1, 1.0); 
             }
+
         }
     }
 }
@@ -137,9 +137,10 @@ void main() {
     
     o_color = backColor;
     
-    drawAllRays();
+    //drawAllRays();
+    drawBlocks(uv);
     drawRay(backColor, uv);
     drawCircle(backColor, uv);
-    drawBlocks(uv);
+    
 
 }
