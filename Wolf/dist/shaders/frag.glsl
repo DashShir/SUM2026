@@ -6,8 +6,8 @@ layout (location = 0) out vec4 o_color;
 #define FRAME_H 500.0
 #define ys float(gl_FragCoord.y)
 #define xs float(gl_FragCoord.x)
-#define NUM_OF_RAYS 15.0
-#define VIEW_ANGLE 1.22 //rad
+#define NUM_OF_RAYS 25.0
+#define VIEW_ANGLE 1.02 //rad
 
 uniform float u_time, frame_w, frame_h, coef_x, my, mx, is_click;
 
@@ -33,9 +33,11 @@ void drawCircle(vec4 backColor, vec2 uv) {
 }
 
 void drawRay(vec4 backColor, vec2 uv, float cur_angle) {
-    toPlayer = vec2((uv.x - u_pos.x) * coef_x, uv.y - u_pos.y);
-    
-    vec2 toStaticOrigin = vec2(uv.x * coef_x, uv.y);
+    //toPlayer = vec2((uv.x - u_pos.x) * coef_x, uv.y - u_pos.y);
+    toPlayer = vec2((uv.x - u_pos.x), uv.y - u_pos.y);
+
+    //vec2 toStaticOrigin = vec2(uv.x * coef_x, uv.y);
+    vec2 toStaticOrigin = vec2(uv.x, uv.y);
     vec2 rayDir = normalize(vec2(cos(cur_angle), sin(cur_angle)));
     float scalar_projection = dot(toPlayer, rayDir);
     
@@ -60,13 +62,13 @@ float isWall(vec2 point) {
     return 0.0;
 }
 
-float castSingleRay(vec2 origin, vec2 direction) {
+float castSingleRay(vec2 start_vec, vec2 direction) {
     float distance = 0.0;   
-    float stepSize = 0.04;  
+    float stepSize = 0.01;  
     float maxDistance = 2.0; 
     
     for (float t = 0.0; t < maxDistance; t += stepSize) {
-        vec2 point = origin + direction * t;  
+        vec2 point = start_vec + direction * t;  
         if (isWall(point) > 0.5) {            
             return t;                         
         }
@@ -91,7 +93,8 @@ void drawAllRays() {
     float angleStep = angle_view / verticalStripes;
     rayAngle = startAngle + float(rayIndex) * angleStep;
     
-    vec2 rayDirection = vec2(cos(rayAngle) * coef_x, sin(rayAngle));
+    //vec2 rayDirection = vec2(cos(rayAngle) * coef_x, sin(rayAngle));
+    vec2 rayDirection = vec2(cos(rayAngle), sin(rayAngle));
 
     float distance = castSingleRay(u_pos, rayDirection);
     
@@ -99,6 +102,41 @@ void drawAllRays() {
         float brightness = 1.0 - smoothstep(0.0, 0.5, distance);
         o_color = vec4(0.4, 0.4, 0.4, 1.0) * brightness;
     }
+}
+
+void cropRay(float cur_angle) {
+    vec2 playerPos = vec2(xs, ys);
+
+}
+
+float getRayDist(float angle) {
+    vec2 dir = vec2(cos(angle), sin(angle));
+    return castSingleRay(u_pos, dir);
+}
+
+float getRayAngle() {
+    float normX = (xs / frame_w) * 2.0 - 1.0;
+    float delta = atan(normX * tan(VIEW_ANGLE / 2.0));
+    
+    float angle = u_angle - delta;
+    return angle;
+}
+
+void drawAll(vec2 uv) {
+    float angle = getRayAngle();
+    float dist = getRayDist(angle);;
+    float corrected_dist = dist * cos(angle - u_angle);
+
+    float wall_h = 0.4 / corrected_dist;
+    float bright = 1.0 - smoothstep(0.1, 0.75, corrected_dist);
+    if (abs(uv.y) < wall_h) {
+        o_color = vec4(0.9 * bright, 0, 0, 1);
+    } else if (uv.y > wall_h) {
+        o_color = vec4(0.1, 0, 0.2, 1);
+    } else {
+        o_color = vec4(0.1, 0.2, 0, 1);
+    }
+
 }
 
 void drawPlaneRays(vec4 backColor, vec2 uv) {
@@ -147,10 +185,12 @@ void main() {
     vec4 backColor = mix(vec4(coeff, 0, 0, 1), vec4(0.2, 0.2, 0.2, 1), isAfterFiveSec);
 
     vec2 uv =  (gl_FragCoord.xy / vec2(frame_w, frame_h)) * 2.0 - 1.0;
-    
+    uv.x *= coef_x;
+
     o_color = backColor;
     
     //drawAllRays();
+    drawAll(uv);
     drawBlocks(uv);
     //drawRay(backColor, uv);
     drawPlaneRays(backColor, uv);

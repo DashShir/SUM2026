@@ -8,8 +8,8 @@ class Game {
         this.PlayerX = 0.0;
         this.PlayerY = 0.0;
         this.PlayerAngle = 0.0;
-        this.PlayerSpeed = 0.02;
-        this.PlayerRotSpeed = 0.021;
+        this.PlayerSpeed = 0.002;
+        this.PlayerRotSpeed = 0.0021;
 
         this.uPosition = gl.getUniformLocation(program, "u_pos");
         this.uAngle = gl.getUniformLocation(program, "u_angle");
@@ -113,8 +113,6 @@ class Game {
                 this.PlayerY = nextY;
             }
         }
-
-
 
         this.PlayerX = Math.max(-1.0, Math.min(1.0, this.PlayerX));
         this.PlayerY = Math.max(-1.0, Math.min(1.0, this.PlayerY));
