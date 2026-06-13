@@ -6,7 +6,8 @@ layout (location = 0) out vec4 o_color;
 #define FRAME_H 500.0
 #define ys float(gl_FragCoord.y)
 #define xs float(gl_FragCoord.x)
-#define NUM_OF_RAYS 2
+#define NUM_OF_RAYS 15.0
+#define VIEW_ANGLE 1.22 //rad
 
 uniform float u_time, frame_w, frame_h, coef_x, my, mx, is_click;
 
@@ -31,11 +32,11 @@ void drawCircle(vec4 backColor, vec2 uv) {
     } 
 }
 
-void drawRay(vec4 backColor, vec2 uv) {
+void drawRay(vec4 backColor, vec2 uv, float cur_angle) {
     toPlayer = vec2((uv.x - u_pos.x) * coef_x, uv.y - u_pos.y);
     
     vec2 toStaticOrigin = vec2(uv.x * coef_x, uv.y);
-    vec2 rayDir = normalize(vec2(cos(u_angle) * coef_x, sin(u_angle)));
+    vec2 rayDir = normalize(vec2(cos(cur_angle), sin(cur_angle)));
     float scalar_projection = dot(toPlayer, rayDir);
     
     float distToRay = length(toPlayer - rayDir * scalar_projection);
@@ -100,6 +101,18 @@ void drawAllRays() {
     }
 }
 
+void drawPlaneRays(vec4 backColor, vec2 uv) {
+    float startAngle = u_angle - VIEW_ANGLE * 0.5;
+    float angleStep = VIEW_ANGLE / NUM_OF_RAYS;
+
+    float cur_angle = startAngle;
+
+    for (float i = 0.0; i < NUM_OF_RAYS; i++) {
+        drawRay(backColor, uv, cur_angle);
+        cur_angle += angleStep;
+    }
+}
+
 void drawBlocks(vec2 uv) {
     vec2 uv_new = vec2(uv.x, - uv.y);
     vec2 mapWorldSize = u_map_size * u_block_size;
@@ -139,7 +152,8 @@ void main() {
     
     //drawAllRays();
     drawBlocks(uv);
-    drawRay(backColor, uv);
+    //drawRay(backColor, uv);
+    drawPlaneRays(backColor, uv);
     drawCircle(backColor, uv);
     
 
