@@ -1,28 +1,12 @@
 import { add } from './math.js'
 import { GameInit } from './game.js'
-import { Pane } from 'tweakpane'
 
 window.addEventListener("load", () => {
-    const params = {
-        factor: 30,
-        title: "rollup test",
-        color: "#e51a00"
-    }
-
-    const pane = new Pane();
-    pane.addBinding(params, "factor");
-    pane.addBinding(params, "title");
-    pane.addBinding(params, "color");
-
     console.log("abb");
     console.log(add(1, 3));
 
     onStart();
 
-    setInterval(() => {
-        const str = JSON.stringify(params);
-        console.log(str);
-    }, 1000)
 })
 
 let canvas;
@@ -105,6 +89,7 @@ function initShaders() {
     IsClick_location = gl.getUniformLocation(program, "is_click");
 }
 
+
 let vertexBuffer;
 
 function initBuffer() {
@@ -169,13 +154,20 @@ window.addEventListener("keyup", (e) => {
     keys[e.code] = false;
 })
 
+async function loadMapAndStart() {
+    try {
+        await game.init('maps/map2.png');
+        console.log('Map loaded, size:', game.mapWidth, 'x', game.mapHeight);
+        startTime = new Date().getTime();
+        drawScene();
+    } catch (err) {
+        console.error('Map loading error:', err);
+        throw err;
+    }
+}
 
 function onStart() {
     canvas = document.getElementById("webgl-canvas");
-
-    canvas.onmousemove = (ev) => {
-        console.log(`(${ev.x}, ${ev.y})`);
-    };
 
     if (!initGL(canvas)) {
         return;
@@ -189,7 +181,7 @@ function onStart() {
         .then(text => shaderVs = text)
         .then(() => initShaders())
         .then(() => initBuffer())
-        .then(() => startTime = new Date().getTime())
-        .then(() => drawScene());
+        .then(() => loadMapAndStart())
+        .catch(err => console.error('Init error:', err));
 
 }

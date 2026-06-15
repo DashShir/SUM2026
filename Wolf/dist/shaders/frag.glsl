@@ -14,7 +14,7 @@ uniform float u_time, frame_w, frame_h, coef_x, my, mx, is_click;
 uniform vec2 u_pos;
 uniform float u_angle;
 
-uniform float u_map[1000];  
+uniform sampler2D u_map_tex; 
 uniform vec2 u_map_size;    
 uniform float u_block_size, u_block_thin; 
 
@@ -51,19 +51,21 @@ void drawRay(vec4 backColor, vec2 uv, float cur_angle) {
 float isWall(vec2 point) {
     vec2 mapWorldSize = u_map_size * u_block_size;
     vec2 worldPos = point + mapWorldSize * 0.5;
-    
+    worldPos.y = mapWorldSize.y - worldPos.y;
+    vec2 uv = worldPos / mapWorldSize;
+
     int blockX = int(floor(worldPos.x / u_block_size));
     int blockY = int(floor(worldPos.y / u_block_size));
 
-    if (blockX >= 0 && blockX < int(u_map_size.x) && blockY >= 0 && blockY < int(u_map_size.y)) {
-        int mapIndex = blockY * int(u_map_size.x) + blockX;
-        return step(0.5, u_map[mapIndex]);
-    }    
-    return 0.0;
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+        return 1.0; 
+    }
+
+    return texture(u_map_tex, uv).r;
 }
 
 float castSingleRay(vec2 start_vec, vec2 direction) {
-    float stepSize = 0.009;  
+    float stepSize = 0.004;  
     float maxDistance = 2.0; 
     
     for (float t = 0.0; t < maxDistance; t += stepSize) {
@@ -94,8 +96,8 @@ void drawAll(vec2 uv) {
     float dist = getRayDist(angle);
     float corrected_dist = dist * cos(angle - u_angle);
 
-    float wall_h = 0.3 / corrected_dist;
-    float bright = 1.0 - smoothstep(0.1, 0.75, corrected_dist);
+    float wall_h = 0.05 / corrected_dist;
+    float bright = 1.0 - smoothstep(0.1, 0.55, corrected_dist);
     //bright = 0.5;
     if (abs(uv.y) < wall_h) {
         o_color = vec4(0.9 * bright, 0, 0, 1);
@@ -127,23 +129,18 @@ void drawBlocks(vec2 uv) {
 
     vec2 mapSpace = worldPos + mapWorldSize * 0.5;
 
-    int blockX = int(floor(mapSpace.x / u_block_size));
-    int blockY = int(floor(mapSpace.y / u_block_size));
+    vec2 tex_uv = mapSpace / mapWorldSize;
 
-    if (blockX >= 0 && blockX < int(u_map_size.x) && blockY >= 0 && blockY < int(u_map_size.y)) {
-        int mapIndex = blockY * int(u_map_size.x) + blockX;
-        float isWall = u_map[mapIndex];
+    float is_wall = texture(u_map_tex, tex_uv).r;
 
-        if (isWall > 0.5) {
-            o_color = vec4(1, 0.3, 0.3, 1.0); 
-            
-            vec2 inBlock = mod(mapSpace, u_block_size);
-            float thickness = u_block_thin;
-            if (inBlock.x < thickness || inBlock.x > u_block_size - thickness || 
-                inBlock.y < thickness || inBlock.y > u_block_size - thickness) {
-                o_color = vec4(0.1, 1, 0.1, 1.0); 
-            }
-
+    if (is_wall > 0.5) {
+        o_color = vec4(1, 0.3, 0.3, 1.0); 
+        
+        vec2 inBlock = mod(mapSpace, u_block_size);
+        float thickness = u_block_thin;
+        if (inBlock.x < thickness || inBlock.x > u_block_size - thickness || 
+            inBlock.y < thickness || inBlock.y > u_block_size - thickness) {
+            o_color = vec4(0.1, 1, 0.1, 1.0); 
         }
     }
 }
@@ -160,7 +157,7 @@ void main() {
     
     //drawAllRays();
     drawAll(uv);
-    drawBlocks(uv);
+    //drawBlocks(uv);
     //drawRay(backColor, uv);
     drawPlaneRays(backColor, uv);
     drawCircle(backColor, uv);
