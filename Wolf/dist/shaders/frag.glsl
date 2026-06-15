@@ -63,8 +63,7 @@ float isWall(vec2 point) {
 }
 
 float castSingleRay(vec2 start_vec, vec2 direction) {
-    float distance = 0.0;   
-    float stepSize = 0.01;  
+    float stepSize = 0.009;  
     float maxDistance = 2.0; 
     
     for (float t = 0.0; t < maxDistance; t += stepSize) {
@@ -76,38 +75,6 @@ float castSingleRay(vec2 start_vec, vec2 direction) {
     return -1.0;
 }
 
-void drawAllRays() {
-    float angle_view = 0.8;
-    float startAngle = u_angle - angle_view * 0.5;
-    float endAngle = u_angle + angle_view * 0.5;
-
-    float verticalStripes = 1800.0;          
-    float stripeWidth = frame_w / verticalStripes;
-
-    int rayIndex = int(floor(xs / stripeWidth));
-    
-    float curX = xs / frame_w;
-    
-    float rayAngle = startAngle + curX * angle_view;
-    
-    float angleStep = angle_view / verticalStripes;
-    rayAngle = startAngle + float(rayIndex) * angleStep;
-    
-    //vec2 rayDirection = vec2(cos(rayAngle) * coef_x, sin(rayAngle));
-    vec2 rayDirection = vec2(cos(rayAngle), sin(rayAngle));
-
-    float distance = castSingleRay(u_pos, rayDirection);
-    
-    if (distance > 0.0) {
-        float brightness = 1.0 - smoothstep(0.0, 0.5, distance);
-        o_color = vec4(0.4, 0.4, 0.4, 1.0) * brightness;
-    }
-}
-
-void cropRay(float cur_angle) {
-    vec2 playerPos = vec2(xs, ys);
-
-}
 
 float getRayDist(float angle) {
     vec2 dir = vec2(cos(angle), sin(angle));
@@ -124,11 +91,12 @@ float getRayAngle() {
 
 void drawAll(vec2 uv) {
     float angle = getRayAngle();
-    float dist = getRayDist(angle);;
+    float dist = getRayDist(angle);
     float corrected_dist = dist * cos(angle - u_angle);
 
-    float wall_h = 0.4 / corrected_dist;
+    float wall_h = 0.3 / corrected_dist;
     float bright = 1.0 - smoothstep(0.1, 0.75, corrected_dist);
+    //bright = 0.5;
     if (abs(uv.y) < wall_h) {
         o_color = vec4(0.9 * bright, 0, 0, 1);
     } else if (uv.y > wall_h) {
@@ -144,6 +112,7 @@ void drawPlaneRays(vec4 backColor, vec2 uv) {
     float angleStep = VIEW_ANGLE / NUM_OF_RAYS;
 
     float cur_angle = startAngle;
+
 
     for (float i = 0.0; i < NUM_OF_RAYS; i++) {
         drawRay(backColor, uv, cur_angle);

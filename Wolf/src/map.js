@@ -23,27 +23,30 @@ class WorldMap {
         this.mapWidth = this.text_map[0].length;
         this.mapHeight = this.text_map.length;
 
+        this.mapWorldWidth = this.mapWidth * this.block_size;
+        this.mapWorldHeight = this.mapHeight * this.block_size;
     }
 
-    canMove(x, y, coef) {
-        const sc_mapW = this.mapWidth * this.block_size;
-        const sc_mapH = this.mapHeight * this.block_size;
+    worldToGrid(worldX, worldY) {
+        const normX = (worldX + this.mapWorldWidth / 2) / this.mapWorldWidth;
+        const normY = (worldY + this.mapWorldHeight / 2) / this.mapWorldHeight;
 
-        const gridX = (x * sc_mapW / 2) + sc_mapW / 2;
-        const gridY = (y * sc_mapH / 2) + sc_mapH / 2;
+        const cellX = Math.floor(normX * this.mapWidth);
+        const cellY = Math.floor(normY * this.mapHeight);
 
-        const cellX = Math.floor(gridX / this.block_size);
-        const cellY = this.mapHeight - 1 - Math.floor(gridY / this.block_size);
+        return { cellX, cellY };
+    }
+
+    canMove(x, y) {
+        const { cellX, cellY } = this.worldToGrid(x, y);
 
         if (cellX < 0 || cellX >= this.mapWidth || cellY < 0 || cellY >= this.mapHeight) {
             return false;
         }
+
         return this.text_map[cellY][cellX] === '.';
     }
 
-    countCollision(x, y, ray_angle) {
-
-    }
 
 }
 

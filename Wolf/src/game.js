@@ -9,7 +9,7 @@ class Game {
         this.PlayerY = 0.0;
         this.PlayerAngle = 0.0;
         this.PlayerSpeed = 0.002;
-        this.PlayerRotSpeed = 0.0021;
+        this.PlayerRotSpeed = 0.0151;
 
         this.uPosition = gl.getUniformLocation(program, "u_pos");
         this.uAngle = gl.getUniformLocation(program, "u_angle");
@@ -114,8 +114,12 @@ class Game {
             }
         }
 
-        this.PlayerX = Math.max(-1.0, Math.min(1.0, this.PlayerX));
-        this.PlayerY = Math.max(-1.0, Math.min(1.0, this.PlayerY));
+        const halfMapW = (this.mapWidth * this.blockSize) / 2;
+        const halfMapH = (this.mapHeight * this.blockSize) / 2;
+
+        this.PlayerX = Math.max(-halfMapW, Math.min(halfMapW, this.PlayerX));
+        this.PlayerY = Math.max(-halfMapH, Math.min(halfMapH, this.PlayerY));
+
 
     }
 
