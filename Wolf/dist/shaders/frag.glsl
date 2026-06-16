@@ -48,16 +48,11 @@ void drawRay(vec4 backColor, vec2 uv, float cur_angle) {
     }
 }
 
-float isWall(vec2 point) {
-    vec2 mapWorldSize = u_map_size * u_block_size;
-    vec2 worldPos = point + mapWorldSize * 0.5;
-    worldPos.y = mapWorldSize.y - worldPos.y;
-    vec2 uv = worldPos / mapWorldSize;
+float isWall(ivec2 blockPos) {
+    vec2 uv = (vec2(blockPos) + 0.5) / u_map_size;
 
-    int blockX = int(floor(worldPos.x / u_block_size));
-    int blockY = int(floor(worldPos.y / u_block_size));
-
-    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+    if (blockPos.x < 0 || float(blockPos.x) >= u_map_size.x ||
+        blockPos.y < 0 || float(blockPos.y) >= u_map_size.y) {
         return 1.0; 
     }
 
@@ -65,7 +60,72 @@ float isWall(vec2 point) {
 }
 
 float castSingleRay(vec2 start_vec, vec2 direction) {
-    float stepSize = 0.004;  
+    vec2 mapWorldSize = u_map_size * u_block_size;
+    vec2 corrected_start = start_vec + mapWorldSize * 0.5;
+    corrected_start.y = mapWorldSize.y - corrected_start.y;
+    
+    vec2 gridStart = corrected_start / u_block_size;
+    int blockX = int(floor(gridStart.x));
+    int blockY = int(floor(gridStart.y));
+    ivec2 mapPos = ivec2(blockX, blockY);
+    
+    direction.y = -direction.y;
+    
+    vec2 deltaDist;
+    deltaDist.x = 1.0 / max(abs(direction.x), 0.000001);
+    deltaDist.y = 1.0 / max(abs(direction.y), 0.000001);
+
+    ivec2 step;
+    step.x = direction.x < 0.0 ? -1 : 1;
+    step.y = direction.y < 0.0 ? -1 : 1;
+
+    vec2 sideDist;
+    if (direction.x < 0.0) {
+        sideDist.x = (gridStart.x - float(mapPos.x)) * deltaDist.x;
+    } else {
+        sideDist.x = (float(mapPos.x) + 1.0 - gridStart.x) * deltaDist.x;
+    } 
+    if (direction.y < 0.0) {
+        sideDist.y = (gridStart.y - float(mapPos.y)) * deltaDist.y;
+    } else {
+        sideDist.y = (float(mapPos.y) + 1.0 - gridStart.y) * deltaDist.y;
+    }
+
+    vec2 lastStep;
+    int hitted = 0;
+    for (int i = 0; i < 100; i++) {
+        if (sideDist.x < sideDist.y) {
+            sideDist.x += deltaDist.x;
+            mapPos.x += step.x;
+            lastStep = vec2(1.0, 0.0);
+        } else {
+            sideDist.y += deltaDist.y;
+            mapPos.y += step.y;
+            lastStep = vec2(0.0, 1.0);
+        }
+        
+        if (isWall(mapPos) > 0.5) {
+            hitted = 1;
+            break;
+        }
+    }
+
+
+    if (hitted == 0) {
+        return -1.0;
+    }
+
+    float t;
+    if (lastStep.x > lastStep.y) {
+        t = sideDist.x - deltaDist.x;
+    } else {
+        t = sideDist.y - deltaDist.y;
+    }
+
+    return t * u_block_size;
+
+/*
+    float stepSize = 0.009;  
     float maxDistance = 2.0; 
     
     for (float t = 0.0; t < maxDistance; t += stepSize) {
@@ -75,6 +135,7 @@ float castSingleRay(vec2 start_vec, vec2 direction) {
         }
     }
     return -1.0;
+*/
 }
 
 

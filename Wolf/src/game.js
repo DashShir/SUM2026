@@ -8,8 +8,8 @@ class Game {
         this.PlayerX = 0.0;
         this.PlayerY = 0.0;
         this.PlayerAngle = 0.0;
-        this.PlayerSpeed = 0.001;
-        this.PlayerRotSpeed = 0.0151;
+        this.PlayerSpeed = 0.002;
+        this.PlayerRotSpeed = 0.0351;
 
         this.uPosition = gl.getUniformLocation(program, "u_pos");
         this.uAngle = gl.getUniformLocation(program, "u_angle");
