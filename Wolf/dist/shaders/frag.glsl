@@ -123,6 +123,7 @@ vec4 castSingleRay(vec2 start_vec, vec2 direction) {
     float t;
     if (lastStep.x > lastStep.y) {
         t = sideDist.x - deltaDist.x;
+        hitColor *= 0.65;
     } else {
         t = sideDist.y - deltaDist.y;
     }
@@ -154,15 +155,15 @@ void drawAll(vec2 uv) {
 
     float corrected_dist = dist * cos(angle - u_angle);
 
-    float wall_h = 0.05 / corrected_dist;
+    float wall_h = 0.19 / corrected_dist;
     float bright = 1.0 - smoothstep(0.1, 0.55, corrected_dist);
     //bright = 0.5;
     if (abs(uv.y) < wall_h) {
         o_color = vec4(color.r * bright, color.g * bright, color.b * bright, 1);
     } else if (uv.y > wall_h) {
-        o_color = vec4(0.1, 0, 0.2, 1);
+        o_color = vec4(0.1, 0.1, 0.1, 1);
     } else {
-        o_color = vec4(0.1, 0.2, 0, 1);
+        o_color = vec4(0.2, 0.2, 0.2, 1);
     }
 
 }

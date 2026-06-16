@@ -53,9 +53,15 @@ class WorldMap {
         let wallCount = 0;
         this.collisionData = new Uint8Array(img.width * img.height);
         for (let i = 0; i < this.collisionData.length; i++) {
-            this.collisionData[i] = imageData.data[i * 4] > 127 ? 1 : 0;
-            if (this.collisionData[i] === 1) {
+            const r = imageData.data[i * 4];
+            const g = imageData.data[i * 4 + 1];
+            const b = imageData.data[i * 4 + 2];
+
+            if (r > 40 || g > 40 || b > 40) {
+                this.collisionData[i] = 1;
                 wallCount++;
+            } else {
+                this.collisionData[i] = 0; // Чистый черный космос — ходить можно
             }
         }
         console.log('Walls found:', wallCount, 'out of', this.collisionData.length);
