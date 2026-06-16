@@ -22,6 +22,8 @@ let keys = {};
 let frame_w = 2000;
 let frame_h = 1000;
 
+const MAP_PATH = "maps/map3.png";
+
 function initGL(canvas) {
     gl = canvas.getContext("webgl2");
     if (!gl) {
@@ -156,7 +158,7 @@ window.addEventListener("keyup", (e) => {
 
 async function loadMapAndStart() {
     try {
-        await game.init('maps/map2.png');
+        await game.init(MAP_PATH);
         console.log('Map loaded, size:', game.mapWidth, 'x', game.mapHeight);
         startTime = new Date().getTime();
         drawScene();

@@ -28,10 +28,9 @@ class Game {
 
         this.coef = this.gl.canvas.width / this.gl.canvas.height;
 
-
     }
 
-    async init(imagePath = 'maps/map2.png') {
+    async init(imagePath) {
         await this.map.loadImage(imagePath);
         this.mapWidth = this.map.mapWidth;
         this.mapHeight = this.map.mapHeight;

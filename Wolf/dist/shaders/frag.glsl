@@ -48,18 +48,18 @@ void drawRay(vec4 backColor, vec2 uv, float cur_angle) {
     }
 }
 
-float isWall(ivec2 blockPos) {
-    vec2 uv = (vec2(blockPos) + 0.5) / u_map_size;
-
+vec3 getWallColor(ivec2 blockPos) {
     if (blockPos.x < 0 || float(blockPos.x) >= u_map_size.x ||
         blockPos.y < 0 || float(blockPos.y) >= u_map_size.y) {
-        return 1.0; 
+        return vec3(1.0); 
     }
 
-    return texture(u_map_tex, uv).r;
+    vec2 uv = (vec2(blockPos) + 0.5) / u_map_size;
+
+    return texture(u_map_tex, uv).rgb;
 }
 
-float castSingleRay(vec2 start_vec, vec2 direction) {
+vec4 castSingleRay(vec2 start_vec, vec2 direction) {
     vec2 mapWorldSize = u_map_size * u_block_size;
     vec2 corrected_start = start_vec + mapWorldSize * 0.5;
     corrected_start.y = mapWorldSize.y - corrected_start.y;
@@ -93,6 +93,8 @@ float castSingleRay(vec2 start_vec, vec2 direction) {
 
     vec2 lastStep;
     int hitted = 0;
+    vec3 hitColor;
+
     for (int i = 0; i < 100; i++) {
         if (sideDist.x < sideDist.y) {
             sideDist.x += deltaDist.x;
@@ -104,15 +106,18 @@ float castSingleRay(vec2 start_vec, vec2 direction) {
             lastStep = vec2(0.0, 1.0);
         }
         
-        if (isWall(mapPos) > 0.5) {
+    vec3 curWall = getWallColor(mapPos);
+
+    if (length(curWall) > 0.5) {
             hitted = 1;
+            hitColor = curWall;
             break;
         }
     }
 
 
     if (hitted == 0) {
-        return -1.0;
+        return vec4(0, 0, 0, -1);
     }
 
     float t;
@@ -122,24 +127,12 @@ float castSingleRay(vec2 start_vec, vec2 direction) {
         t = sideDist.y - deltaDist.y;
     }
 
-    return t * u_block_size;
+    return vec4(hitColor, t * u_block_size);
 
-/*
-    float stepSize = 0.009;  
-    float maxDistance = 2.0; 
-    
-    for (float t = 0.0; t < maxDistance; t += stepSize) {
-        vec2 point = start_vec + direction * t;  
-        if (isWall(point) > 0.5) {            
-            return t;                         
-        }
-    }
-    return -1.0;
-*/
 }
 
 
-float getRayDist(float angle) {
+vec4 getRayDist(float angle) {
     vec2 dir = vec2(cos(angle), sin(angle));
     return castSingleRay(u_pos, dir);
 }
@@ -154,14 +147,18 @@ float getRayAngle() {
 
 void drawAll(vec2 uv) {
     float angle = getRayAngle();
-    float dist = getRayDist(angle);
+    
+    vec4 dist_and_color = getRayDist(angle);
+    float dist = dist_and_color.a;
+    vec3 color = dist_and_color.rgb;
+
     float corrected_dist = dist * cos(angle - u_angle);
 
     float wall_h = 0.05 / corrected_dist;
     float bright = 1.0 - smoothstep(0.1, 0.55, corrected_dist);
     //bright = 0.5;
     if (abs(uv.y) < wall_h) {
-        o_color = vec4(0.9 * bright, 0, 0, 1);
+        o_color = vec4(color.r * bright, color.g * bright, color.b * bright, 1);
     } else if (uv.y > wall_h) {
         o_color = vec4(0.1, 0, 0.2, 1);
     } else {
