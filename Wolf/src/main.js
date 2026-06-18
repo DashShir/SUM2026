@@ -22,7 +22,9 @@ let keys = {};
 let frame_w = 2000;
 let frame_h = 1000;
 
-const MAP_PATH = "maps/map3.png";
+const MAP_PATH = "resources/maps/map4.png";
+const WALL_PATH = "resources/textures/num_walls_2_cr.png";
+const PLAYER_PATH = "resources/sprites/base_sprite.png"
 
 function initGL(canvas) {
     gl = canvas.getContext("webgl2");
@@ -158,7 +160,7 @@ window.addEventListener("keyup", (e) => {
 
 async function loadMapAndStart() {
     try {
-        await game.init(MAP_PATH);
+        await game.init(MAP_PATH, WALL_PATH, PLAYER_PATH);
         console.log('Map loaded, size:', game.mapWidth, 'x', game.mapHeight);
         startTime = new Date().getTime();
         drawScene();
@@ -175,10 +177,10 @@ function onStart() {
         return;
     }
 
-    fetch("shaders/frag.glsl")
+    fetch("resources/shaders/frag.glsl")
         .then(response => response.text())
         .then(text => shaderFs = text)
-        .then(() => fetch("shaders/vert.glsl"))
+        .then(() => fetch("resources/shaders/vert.glsl"))
         .then(response => response.text())
         .then(text => shaderVs = text)
         .then(() => initShaders())

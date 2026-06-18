@@ -2,16 +2,16 @@ class WorldMap {
     constructor(gl) {
         this.block_size = 0.05;
         this.block_thin = 0.0005;
-        this.texture = null;
+        this.map_tex = null;
         this.loaded = false;
         this.gl = gl;
         this.collisionData = null;
 
     }
 
-    async loadImage(imagePath) {
+    async loadMap(mapPath) {
         const img = new Image();
-        img.src = imagePath;
+        img.src = mapPath;
 
         return new Promise((resolve, reject) => {
             img.onload = () => {
@@ -20,8 +20,8 @@ class WorldMap {
                 this.mapWorldWidth = this.mapWidth * this.block_size;
                 this.mapWorldHeight = this.mapHeight * this.block_size;
 
-                this.texture = this.gl.createTexture();
-                this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
+                this.map_tex = this.gl.createTexture();
+                this.gl.bindTexture(this.gl.TEXTURE_2D, this.map_tex);
 
                 this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
                 this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
@@ -61,7 +61,7 @@ class WorldMap {
                 this.collisionData[i] = 1;
                 wallCount++;
             } else {
-                this.collisionData[i] = 0; // Чистый черный космос — ходить можно
+                this.collisionData[i] = 0;
             }
         }
         console.log('Walls found:', wallCount, 'out of', this.collisionData.length);
@@ -84,14 +84,14 @@ class WorldMap {
         const { cellX, cellY } = this.worldToGrid(x, y);
 
         if (cellX < 0 || cellX >= this.mapWidth || cellY < 0 || cellY >= this.mapHeight)
-            return false;
+            return true;
 
         return this.collisionData[cellY * this.mapWidth + cellX] === 0;
     }
 
     bind(textureUnit = 0) {
         this.gl.activeTexture(this.gl.TEXTURE0 + textureUnit);
-        this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.map_tex);
     }
 }
 
