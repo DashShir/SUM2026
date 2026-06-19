@@ -11,7 +11,6 @@ window.addEventListener("load", () => {
 
 let canvas;
 let gl;
-let program;
 let game;
 let startTime;
 let dmx = 0, dmy = 0;
@@ -22,7 +21,7 @@ let keys = {};
 let frame_w = 2000;
 let frame_h = 1000;
 
-const MAP_PATH = "resources/maps/map4.png";
+const MAP_PATH = "resources/maps/map6.png";
 const WALL_PATH = "resources/textures/num_walls_2_cr.png";
 const PLAYER_PATH = "resources/sprites/base_sprite.png"
 
@@ -34,11 +33,19 @@ function initGL(canvas) {
     }
     gl.viewportWidth = canvas.width;
     gl.viewportHeight = canvas.height;
+
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LESS);
     return true;
 }
 
+let program;
 let shaderFs = ``;
 let shaderVs = ``;
+
+let spriteProgram;
+let spriteShaderFs = ``;
+let spriteShaderVs = ``;
 
 function getShader(shaderStr, type) {
     const shader = gl.createShader(type);
@@ -67,7 +74,7 @@ function initShaders() {
     const vs = getShader(shaderVs, gl.VERTEX_SHADER);
 
     if (!vs || !fs) {
-        console.error("One of shaders hadn't compiled. Check the function <<getShader>>.");
+        console.error("One of standard shaders hadn't compiled. Check the function <<getShader>>.");
         return;
     }
 
@@ -93,6 +100,25 @@ function initShaders() {
     IsClick_location = gl.getUniformLocation(program, "is_click");
 }
 
+function initSpriteShaders() {
+    const fs = getShader(shaderFs, gl.FRAGMENT_SHADER);
+    const vs = getShader(shaderVs, gl.VERTEX_SHADER);
+
+
+    if (!vs || !fs) {
+        console.error("One of sprite shaders hadn't compiled. Check the function <<getShader>>.");
+        return;
+    }
+
+    spriteProgram = gl.createProgram();
+    gl.attachShader(spriteProgram, vs);
+    gl.attachShader(spriteProgram, fs);
+    gl.linkProgram(spriteProgram);
+
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        alert("Program linkage error");
+    }
+}
 
 let vertexBuffer;
 
@@ -110,7 +136,7 @@ function initBuffer() {
 function drawScene() {
     gl.clearColor(0, 1, 0, 1);
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -180,10 +206,22 @@ function onStart() {
     fetch("resources/shaders/frag.glsl")
         .then(response => response.text())
         .then(text => shaderFs = text)
+
         .then(() => fetch("resources/shaders/vert.glsl"))
         .then(response => response.text())
         .then(text => shaderVs = text)
+
+        .then(() => fetch("resources/shaders/sprite_frag.glsl"))
+        .then(response => response.text())
+        .then(text => spriteShaderFs = text)
+
+        .then(() => fetch("resources/shaders/sprite_vert.glsl"))
+        .then(response => response.text())
+        .then(text => spriteShaderVs = text)
+
         .then(() => initShaders())
+        .then(() => initSpriteShaders())
+
         .then(() => initBuffer())
         .then(() => loadMapAndStart())
         .catch(err => console.error('Init error:', err));

@@ -220,59 +220,84 @@ void drawAll(vec2 uv) {
     vec3 rayInfo = rayData.b;
     float dist = rayInfo.z;
     
+    float corrected_dist = (dist > 0.0) ? dist * cos(angle - u_angle) : 10000.0;
+
     if (dist < 0.0) {
         if (uv.y > 0.0) {
             o_color = vec4(0.1, 0.1, 0.1, 1.0);
         } else {
             o_color = vec4(0.2, 0.2, 0.2, 1.0);
         }
-        return;
+        
+    } else {
+
+        float corrected_dist = dist * cos(angle - u_angle);
+
+        float wall_h = 0.19 / corrected_dist;
+        float bright = 1.0 - smoothstep(0.1, 0.55, corrected_dist);
+        bright = clamp(0.7 / (corrected_dist + 0.2), 0.0, 1.0);
+        
+        if (abs(uv.y) < wall_h) {
+            float texX = rayInfo.x;
+            float texY = -(uv.y / wall_h) * 0.5 + 0.5; 
+            texX *= 0.58;
+
+            vec3 texColor = texture(u_wall_texture, vec2(texX, texY)).rgb;
+
+            if (color.r > 0.5 && color.g < 0.1 && color.b < 0.1)
+            {
+                if (rayInfo.y > 0.5) {
+                    texColor *= 0.65;
+                }
+                o_color = vec4(texColor * bright, 1);
+            } else {
+                if (rayInfo.y > 0.5) {
+                    color *= 0.65;
+                }
+                o_color = vec4(color * bright, 1);
+            }
+        } else if (uv.y > wall_h) {
+            o_color = vec4(0.1, 0.1, 0.1, 1);
+        } else {
+            o_color = vec4(0.2, 0.2, 0.2, 1);
+        }
     }
 
-    float corrected_dist = dist * cos(angle - u_angle);
+    vec2 lookDir = vec2(cos(u_angle), sin(u_angle));
+    vec2 rightDir = vec2(lookDir.y, -lookDir.x);
+ 
+    for (int j = 0; j < 10; j++) {
+        if (j >= u_other_count) break;
 
-    float wall_h = 0.19 / corrected_dist;
-    float bright = 1.0 - smoothstep(0.1, 0.55, corrected_dist);
-    bright = clamp(0.7 / (corrected_dist + 0.2), 0.0, 1.0);
-    
-    if (abs(uv.y) < wall_h) {
-        if (rayInfo.y > 1.5) {
-            /*
-            float spriteTexX = rayInfo.x; 
-            float spriteTexY = -(uv.y / wall_h) * 0.5 + 0.5;
-            vec4 spriteColor = texture(u_player_texture, vec2(spriteTexX, spriteTexY));
-            if (spriteColor.a < 0.1 || (spriteColor.r < 0.05 && spriteColor.g < 0.05 && spriteColor.b < 0.05)) {
+        vec2 spritePos = u_other_positions[j];
+        vec2 dirToSprite = spritePos - u_pos;
+        
+        float rotX = dot(dirToSprite, lookDir);  
+        float rotY = dot(dirToSprite, rightDir); 
+
+        if (rotX > 0.05 && rotX < corrected_dist) {
+            float fovScale = tan(VIEW_ANGLE * 0.5);
+            float spriteScreenX = (rotY / rotX) / fovScale;
+            
+            float sprite_h = 0.19 / rotX * 0.9;  
+            float sprite_w = (0.19 / rotX) / fovScale * 0.9 ;
+
+            spriteScreenX = spriteScreenX * coef_x;
+            float sprite_w_screen = sprite_w * coef_x;
+
+            float spriteTexX = (uv.x - spriteScreenX) / sprite_w + 0.5;
+            float spriteTexY = -(uv.y / sprite_h) * 0.5 + 0.28;
+
+            if (spriteTexX >= 0.0 && spriteTexX <= 1.0 && spriteTexY >= 0.0 && spriteTexY <= 1.0) {
+                vec4 spriteColor = texture(u_player_texture, vec2(spriteTexX, spriteTexY));
                 
-            } else {
-                
-                o_color = vec4(spriteColor.rgb * bright, 1.0);
-                return; 
+                if (spriteColor.a > 0.0) {
+                    float spriteBright = clamp(0.7 / (rotX + 0.2), 0.0, 1.0);
+                    o_color = vec4(mix(o_color.rgb, spriteColor.rgb * spriteBright, spriteColor.a), 1.0);
+                    break; 
+                }
             }
-            */
         }
-
-        float texX = rayInfo.x;
-        float texY = -(uv.y / wall_h) * 0.5 + 0.5; 
-        texX *= 0.58;
-
-        vec3 texColor = texture(u_wall_texture, vec2(texX, texY)).rgb;
-
-        if (color.r > 0.5 && color.g < 0.1 && color.b < 0.1)
-        {
-            if (rayInfo.y > 0.5) {
-                texColor *= 0.65;
-            }
-            o_color = vec4(texColor * bright, 1);
-        } else {
-            if (rayInfo.y > 0.5) {
-                color *= 0.65;
-            }
-            o_color = vec4(color * bright, 1);
-        }
-    } else if (uv.y > wall_h) {
-        o_color = vec4(0.1, 0.1, 0.1, 1);
-    } else {
-        o_color = vec4(0.2, 0.2, 0.2, 1);
     }
 
 }
