@@ -47,5 +47,5 @@ wss.on('connection', (ws) => {
 });
 
 server.listen(PORT, () => {
-    console.log(`Server hosted on ${PORT}`);
+    console.log(`Server started on port ${PORT}`);
 });
