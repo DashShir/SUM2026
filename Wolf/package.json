@@ -11,6 +11,7 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "express": "^5.2.1",
     "npx": "^10.2.2",
     "rollup": "^4.61.1",
     "tweakpane": "^4.0.5",
