@@ -1,7 +1,7 @@
 import { MapInit } from './map.js'
 import { TexInit } from './texture.js'
 import { PlayerTexInit } from './player.js'
-import { NetworkManager } from './net.js'
+import { Network } from './net.js'
 
 class Game {
     constructor(gl, program) {
@@ -24,6 +24,8 @@ class Game {
 
         this.playerTex = PlayerTexInit(gl);
         this.uPlayerTex = gl.getUniformLocation(program, "u_player_texture");
+        this.uOtherDirections = gl.getUniformLocation(program, "u_other_directions");
+        this.uOtherIsMoving = gl.getUniformLocation(program, "u_other_is_moving");
 
         this.map = MapInit(gl);
 
@@ -37,7 +39,7 @@ class Game {
 
         this.coef = this.gl.canvas.width / this.gl.canvas.height;
 
-        this.network = new NetworkManager("ws://localhost:8001");
+        this.network = new Network("ws://localhost:8001");
         this.network.connect();
     }
 
@@ -55,7 +57,6 @@ class Game {
 
 
     update(keys) {
-
         if (keys['ArrowLeft']) this.PlayerAngle += this.PlayerRotSpeed;
         if (keys['ArrowRight']) this.PlayerAngle -= this.PlayerRotSpeed;
 
@@ -97,6 +98,8 @@ class Game {
 
     render() {
         const flatPositions = new Float32Array(20);
+        const flatDirections = new Float32Array(20);
+        const flatIsMoving = new Int32Array(10);
         let count = 0;
 
         for (const id in this.network.otherPlayers) {
@@ -105,6 +108,9 @@ class Game {
             const p = this.network.otherPlayers[id];
             flatPositions[count * 2] = p.x;
             flatPositions[count * 2 + 1] = p.y;
+            flatDirections[count * 2] = Math.cos(p.angle || 0);
+            flatDirections[count * 2 + 1] = Math.sin(p.angle || 0);
+            flatIsMoving[count] = p.isMoving ? 1 : 0;
             count++;
         }
 
@@ -114,6 +120,8 @@ class Game {
         this.gl.uniform2fv(uOtherPositions, flatPositions);
         this.gl.uniform1i(uOtherCount, count);
 
+        this.gl.uniform2fv(this.uOtherDirections, flatDirections);
+        this.gl.uniform1iv(this.uOtherIsMoving, flatIsMoving);
 
         this.gl.uniform2f(this.uPosition, this.PlayerX, this.PlayerY);
         this.gl.uniform1f(this.uAngle, this.PlayerAngle);

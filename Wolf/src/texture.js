@@ -34,12 +34,10 @@ class WallTex {
 
     }
 
-
     bind(textureUnit = 1) {
         this.gl.activeTexture(this.gl.TEXTURE0 + textureUnit);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.wall_tex);
     }
-
 }
 export function TexInit(gl) {
     return new WallTex(gl);

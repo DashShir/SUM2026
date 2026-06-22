@@ -23,7 +23,7 @@ let frame_h = 1000;
 
 const MAP_PATH = "resources/maps/map6.png";
 const WALL_PATH = "resources/textures/num_walls_2_cr.png";
-const PLAYER_PATH = "resources/sprites/base_sprite.png"
+const PLAYER_PATH = "resources/sprites/base_spriteS_COLOR_cropped_3.png"
 
 function initGL(canvas) {
     gl = canvas.getContext("webgl2");
@@ -43,9 +43,6 @@ let program;
 let shaderFs = ``;
 let shaderVs = ``;
 
-let spriteProgram;
-let spriteShaderFs = ``;
-let spriteShaderVs = ``;
 
 function getShader(shaderStr, type) {
     const shader = gl.createShader(type);
@@ -98,26 +95,6 @@ function initShaders() {
     Mx_location = gl.getUniformLocation(program, "mx");
     My_location = gl.getUniformLocation(program, "my");
     IsClick_location = gl.getUniformLocation(program, "is_click");
-}
-
-function initSpriteShaders() {
-    const fs = getShader(shaderFs, gl.FRAGMENT_SHADER);
-    const vs = getShader(shaderVs, gl.VERTEX_SHADER);
-
-
-    if (!vs || !fs) {
-        console.error("One of sprite shaders hadn't compiled. Check the function <<getShader>>.");
-        return;
-    }
-
-    spriteProgram = gl.createProgram();
-    gl.attachShader(spriteProgram, vs);
-    gl.attachShader(spriteProgram, fs);
-    gl.linkProgram(spriteProgram);
-
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        alert("Program linkage error");
-    }
 }
 
 let vertexBuffer;
@@ -211,17 +188,7 @@ function onStart() {
         .then(response => response.text())
         .then(text => shaderVs = text)
 
-        .then(() => fetch("resources/shaders/sprite_frag.glsl"))
-        .then(response => response.text())
-        .then(text => spriteShaderFs = text)
-
-        .then(() => fetch("resources/shaders/sprite_vert.glsl"))
-        .then(response => response.text())
-        .then(text => spriteShaderVs = text)
-
         .then(() => initShaders())
-        .then(() => initSpriteShaders())
-
         .then(() => initBuffer())
         .then(() => loadMapAndStart())
         .catch(err => console.error('Init error:', err));

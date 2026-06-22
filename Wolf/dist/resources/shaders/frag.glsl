@@ -8,6 +8,7 @@ layout (location = 0) out vec4 o_color;
 #define xs float(gl_FragCoord.x)
 #define NUM_OF_RAYS 25.0
 #define VIEW_ANGLE 1.3202 //rad
+#define MAX_OTHERS 10
 
 uniform float u_time, frame_w, frame_h, coef_x, my, mx, is_click;
 
@@ -21,12 +22,11 @@ uniform vec2 u_map_size;
 uniform float u_block_size, u_block_thin; 
 
 uniform vec2 u_other_positions[10];
+uniform vec2 u_other_directions[10];
+uniform int u_other_is_moving[10];
 uniform int u_other_count;  
 
 uniform sampler2D u_player_texture;
-
-vec2 ray_pos;
-vec2 toPlayer;
     
 struct vec6 {
     vec3 a;
@@ -35,7 +35,7 @@ struct vec6 {
 
 void drawCircle(vec4 backColor, vec2 uv) {
     float r = 0.03;
-   
+    vec2 toPlayer = vec2((uv.x - u_pos.x), uv.y - u_pos.y);
     float distToPlayer = length(toPlayer);
 
     if (distToPlayer < r) {
@@ -46,7 +46,7 @@ void drawCircle(vec4 backColor, vec2 uv) {
 
 void drawRay(vec4 backColor, vec2 uv, float cur_angle) {
     //toPlayer = vec2((uv.x - u_pos.x) * coef_x, uv.y - u_pos.y);
-    toPlayer = vec2((uv.x - u_pos.x), uv.y - u_pos.y);
+    vec2 toPlayer = vec2((uv.x - u_pos.x), uv.y - u_pos.y);
 
     //vec2 toStaticOrigin = vec2(uv.x * coef_x, uv.y);
     vec2 toStaticOrigin = vec2(uv.x, uv.y);
@@ -71,24 +71,6 @@ vec3 getWallColor(ivec2 blockPos) {
     return texture(u_map_tex, uv).rgb;
 }
 
-/*
-bool checkPlayerHit(vec2 currentRayPos, float currentT, float playerRadius, out vec3 outColor, out vec2 outLastStep, vec2 sideDist, vec2 deltaDist) {
-    for (int j = 0; j < 10; j++) {
-        if (j >= u_other_count) {
-             break;
-        }
-        vec2 otherPos = u_other_positions[j]; 
-        float distToEnemy = length(currentRayPos - otherPos);
-
-        if (distToEnemy < playerRadius && currentT > 0.05) {
-            outColor = vec3(0.0, 0.8, 1.0); 
-            outLastStep = (sideDist.x < sideDist.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-            return true;
-        }
-    }
-    return false;
-}
-*/
 vec6 castSingleRay(vec2 start_vec, vec2 direction) {
     vec2 mapWorldSize = u_map_size * u_block_size;
     vec2 corrected_start = start_vec + mapWorldSize * 0.5;
@@ -140,22 +122,6 @@ vec6 castSingleRay(vec2 start_vec, vec2 direction) {
             lastStep = vec2(0.0, 1.0);
         }
 
-/*
-        float currentT;
-        if (lastStep.x > lastStep.y) {
-            currentT = sideDist.x - deltaDist.x;
-        } else {
-            currentT = sideDist.y - deltaDist.y;
-        }
-
-        float worldT = currentT * u_block_size;
-        vec2 currentRayPos = start_vec + worldDirection * worldT;
-        
-        if (checkPlayerHit(currentRayPos, worldT, playerRadius, hitColor, lastStep, sideDist, deltaDist)) {
-            hitted = 2; 
-            break;
-        }
-*/
         vec3 curWall = getWallColor(mapPos);
 
         if (length(curWall) > 0.5) {
@@ -185,13 +151,7 @@ vec6 castSingleRay(vec2 start_vec, vec2 direction) {
     }
 
     wallX = fract(wallX);
-/*
-    if (hitted == 2) {
-        side = 2;
-    }
-*/
-    //return vec4(hitColor, t * u_block_size);
-    //return vec3(wallX, float(side), t * u_block_size);
+
     vec3 a = hitColor;
     vec3 b = vec3(wallX, float(side), t * u_block_size);
     return vec6(a, b);
@@ -212,7 +172,81 @@ float getRayAngle() {
     return angle;
 }
 
-void drawAll(vec2 uv) {
+void drawOthers(vec2 uv, float corrected_dist) {
+    vec2 lookDir = vec2(cos(u_angle), sin(u_angle));
+    vec2 rightDir = vec2(lookDir.y, -lookDir.x);
+ 
+    for (int j = 0; j < MAX_OTHERS; j++) {
+
+        if (j >= u_other_count) break;
+
+        vec2 spritePos = u_other_positions[j];
+        vec2 spriteDir = u_other_directions[j];
+        int spriteMovement = u_other_is_moving[j];
+
+        vec2 dirToSprite = spritePos - u_pos;
+        
+        float rotX = dot(dirToSprite, lookDir);  
+        float rotY = dot(dirToSprite, rightDir); 
+        if (rotX > 0.05 && rotX < corrected_dist) {
+            float fovScale = tan(VIEW_ANGLE * 0.5);
+            float spriteScreenX = (rotY / rotX) / fovScale;
+            
+            float sprite_h = 0.19 / rotX * 0.9;  
+            float sprite_w = (0.19 / rotX) / fovScale * 0.9;
+
+            spriteScreenX = spriteScreenX * coef_x;
+            float sprite_w_screen = sprite_w * coef_x;
+
+            vec2 normalLook = normalize(lookDir);
+            vec2 normalRight = normalize(rightDir);
+            vec2 normalSpriteDir = normalize(spriteDir);
+
+            float dotForward = dot(normalSpriteDir, normalLook);
+            float dotRight = dot(normalSpriteDir, normalRight);
+
+            float frameIndex = 0.0; 
+
+            if (dotForward < -0.707) {
+                frameIndex = 0.0; 
+            } else if (dotRight < -0.707) {
+                frameIndex = 1.0; 
+            } else if (dotForward > 0.707) {
+                frameIndex = 2.0; 
+            } else if (dotRight > 0.707) {
+                frameIndex = 3.0; 
+            } else {
+                if (abs(dotForward) > abs(dotRight)) {
+                    frameIndex = (dotForward > 0.0) ? 2.0 : 0.0;
+                } else {
+                    frameIndex = (dotRight > 0.0) ? 3.0 : 1.0;
+                }
+            }
+            
+            float frameCount = 4.0;
+            float frameWidth = 1.0 / frameCount;
+            float normX = (uv.x - spriteScreenX) / sprite_w + 0.5;
+
+            if (normX >= 0.0 && normX <= 1.0) {
+                float spriteTexX = (frameIndex + normX) * frameWidth;
+                float spriteTexY = -(uv.y / sprite_h) * 0.5 + 0.28;
+                
+                if (spriteTexY >= 0.0 && spriteTexY <= 1.0 && spriteTexX <= (frameIndex + 1.0) * frameWidth) {
+                    vec4 spriteColor = texture(u_player_texture, vec2(spriteTexX, spriteTexY));
+                    
+                    if (spriteColor.a > 0.0) {
+                        float spriteBright = clamp(0.7 / (rotX + 0.2), 0.0, 1.0);
+                        o_color = vec4(mix(o_color.rgb, spriteColor.rgb * spriteBright, spriteColor.a), 1.0);
+                        break; 
+                    }
+                }
+            }
+        }
+       
+    }
+}
+
+void drawEvironment(vec2 uv) {
     float angle = getRayAngle();
     
     vec6 rayData = getRayDist(angle);
@@ -240,7 +274,7 @@ void drawAll(vec2 uv) {
         if (abs(uv.y) < wall_h) {
             float texX = rayInfo.x;
             float texY = -(uv.y / wall_h) * 0.5 + 0.5; 
-            texX *= 0.58;
+            texX *= 0.41;
 
             vec3 texColor = texture(u_wall_texture, vec2(texX, texY)).rgb;
 
@@ -263,42 +297,7 @@ void drawAll(vec2 uv) {
         }
     }
 
-    vec2 lookDir = vec2(cos(u_angle), sin(u_angle));
-    vec2 rightDir = vec2(lookDir.y, -lookDir.x);
- 
-    for (int j = 0; j < 10; j++) {
-        if (j >= u_other_count) break;
-
-        vec2 spritePos = u_other_positions[j];
-        vec2 dirToSprite = spritePos - u_pos;
-        
-        float rotX = dot(dirToSprite, lookDir);  
-        float rotY = dot(dirToSprite, rightDir); 
-
-        if (rotX > 0.05 && rotX < corrected_dist) {
-            float fovScale = tan(VIEW_ANGLE * 0.5);
-            float spriteScreenX = (rotY / rotX) / fovScale;
-            
-            float sprite_h = 0.19 / rotX * 0.9;  
-            float sprite_w = (0.19 / rotX) / fovScale * 0.9 ;
-
-            spriteScreenX = spriteScreenX * coef_x;
-            float sprite_w_screen = sprite_w * coef_x;
-
-            float spriteTexX = (uv.x - spriteScreenX) / sprite_w + 0.5;
-            float spriteTexY = -(uv.y / sprite_h) * 0.5 + 0.28;
-
-            if (spriteTexX >= 0.0 && spriteTexX <= 1.0 && spriteTexY >= 0.0 && spriteTexY <= 1.0) {
-                vec4 spriteColor = texture(u_player_texture, vec2(spriteTexX, spriteTexY));
-                
-                if (spriteColor.a > 0.0) {
-                    float spriteBright = clamp(0.7 / (rotX + 0.2), 0.0, 1.0);
-                    o_color = vec4(mix(o_color.rgb, spriteColor.rgb * spriteBright, spriteColor.a), 1.0);
-                    break; 
-                }
-            }
-        }
-    }
+    drawOthers(uv, corrected_dist);
 
 }
 
@@ -338,6 +337,30 @@ void drawBlocks(vec2 uv) {
     }
 }
 
+void drawOrientir() {
+    if (xs * xs + ys * ys < 225.0) {
+        o_color = vec4(1.0, 0.498, 0.153, 1.0);
+    }
+
+    float dx_lt = xs;
+    float dy_lt = ys - frame_h;
+    if (dx_lt * dx_lt + dy_lt * dy_lt < 225.0) {
+        o_color = vec4(0.247, 0.282, 0.800, 1.0);
+    }
+
+    float dx_rb = xs - frame_w;
+    float dy_rb = ys;
+    if (dx_rb * dx_rb + dy_rb * dy_rb < 225.0) {
+        o_color = vec4(0.60, 0.85, 0.91, 1.0);
+    }
+
+    float dx_rt = xs - frame_w;
+    float dy_rt = ys - frame_h;
+    if (dx_rt * dx_rt + dy_rt * dy_rt < 225.0) {
+        o_color = vec4(0.639, 0.286, 0.643, 1.0);
+    }
+}
+
 void main() {
     float coeff = mod(ys, 10.0) / 10.0;
     float isAfterFiveSec = step(5.0, u_time);
@@ -347,7 +370,13 @@ void main() {
     uv.x *= coef_x;
 
     o_color = backColor;
-    
-    drawAll(uv);
+    bool show_minimap = false; 
 
+    if (show_minimap) {
+        drawBlocks(uv);
+        drawPlaneRays(backColor, uv);   
+    } else {
+        drawEvironment(uv); 
+        drawOrientir();     
+    }
 }
