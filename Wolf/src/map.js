@@ -60,7 +60,6 @@ class WorldMap {
             if (r > 40 || g > 40 || b > 40) {
                 this.collisionData[i] = 1;
                 wallCount++;
-
             } else {
                 this.collisionData[i] = 0;
             }

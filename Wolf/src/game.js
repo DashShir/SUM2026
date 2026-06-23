@@ -39,7 +39,7 @@ class Game {
 
         this.coef = this.gl.canvas.width / this.gl.canvas.height;
 
-        this.network = new Network('ws://155.212.169.163:8002');
+        this.network = new Network('ws://localhost:8001');
         this.network.connect();
     }
 

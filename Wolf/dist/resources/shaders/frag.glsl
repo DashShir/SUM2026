@@ -7,7 +7,7 @@ layout (location = 0) out vec4 o_color;
 #define ys float(gl_FragCoord.y)
 #define xs float(gl_FragCoord.x)
 #define NUM_OF_RAYS 25.0
-#define VIEW_ANGLE 1.3202 //rad
+#define VIEW_ANGLE 1.302 //rad
 #define MAX_OTHERS 10
 
 uniform float u_time, frame_w, frame_h, coef_x, my, mx, is_click;
@@ -267,7 +267,7 @@ void drawEvironment(vec2 uv) {
 
         float corrected_dist = dist * cos(angle - u_angle);
 
-        float wall_h = 0.19 / corrected_dist;
+        float wall_h = 0.15 / corrected_dist;
         float bright = 1.0 - smoothstep(0.1, 0.55, corrected_dist);
         bright = clamp(0.7 / (corrected_dist + 0.2), 0.0, 1.0);
         
@@ -323,10 +323,10 @@ void drawBlocks(vec2 uv) {
 
     vec2 tex_uv = mapSpace / mapWorldSize;
 
-    float is_wall = texture(u_map_tex, tex_uv).r;
+    float is_wall = texture(u_map_tex, tex_uv).r + texture(u_map_tex, tex_uv).g;
 
     if (is_wall > 0.5) {
-        o_color = vec4(1, 0.3, 0.3, 1.0); 
+        o_color = vec4(texture(u_map_tex, tex_uv).r, texture(u_map_tex, tex_uv).g, texture(u_map_tex, tex_uv).b, 1.0); 
         
         vec2 inBlock = mod(mapSpace, u_block_size);
         float thickness = u_block_thin;
@@ -338,25 +338,28 @@ void drawBlocks(vec2 uv) {
 }
 
 void drawOrientir() {
-    if (xs * xs + ys * ys < 225.0) {
+    float rad = 15.0 * 15.00;
+    rad = 45.0 * 45.0;
+
+    if (xs * xs + ys * ys < rad) {
         o_color = vec4(1.0, 0.498, 0.153, 1.0);
     }
 
     float dx_lt = xs;
     float dy_lt = ys - frame_h;
-    if (dx_lt * dx_lt + dy_lt * dy_lt < 225.0) {
+    if (dx_lt * dx_lt + dy_lt * dy_lt < rad) {
         o_color = vec4(0.247, 0.282, 0.800, 1.0);
     }
 
     float dx_rb = xs - frame_w;
     float dy_rb = ys;
-    if (dx_rb * dx_rb + dy_rb * dy_rb < 225.0) {
+    if (dx_rb * dx_rb + dy_rb * dy_rb < rad) {
         o_color = vec4(0.60, 0.85, 0.91, 1.0);
     }
 
     float dx_rt = xs - frame_w;
     float dy_rt = ys - frame_h;
-    if (dx_rt * dx_rt + dy_rt * dy_rt < 225.0) {
+    if (dx_rt * dx_rt + dy_rt * dy_rt < rad) {
         o_color = vec4(0.639, 0.286, 0.643, 1.0);
     }
 }
